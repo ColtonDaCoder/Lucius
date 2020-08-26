@@ -22,27 +22,30 @@ public class  Lift extends SubsystemBase{
     private TalonSRX liftSlave;
 
     private double input;
+    private boolean automatic = true;
     private double power = 0;
+    private double position = 0;
 
     public TalonSRXConfiguration liftMotorSRXconfig;
     public TalonSRXConfiguration liftSlaveSRXconfig;
 
 
-    public DigitalInput highLimit;
-    public DigitalInput lowLimit;
+    public double highTarget = 1000;
+    public double lowTarget = 100;
 
     public Lift(XboxController controller){
         this.controller = controller;
         liftMotor = new TalonSRX(1);
         liftSlave = new TalonSRX(2);
+        liftMotor.configFactoryDefault();
+        liftSlave.configFactoryDefault();
+        boolean phase = false;
+        liftMotor.setSensorPhase(phase);
+        liftSlave.setSensorPhase(phase);
         liftSlave.setInverted(true);
         liftSlave.follow(liftMotor);
 
-        liftMotor.configFactoryDefault();
-        liftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute);
-
-        highLimit = new DigitalInput(9);
-        lowLimit = new DigitalInput(8);
+        liftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
 
         liftMotorSRXconfig = new TalonSRXConfiguration();
         liftSlaveSRXconfig = new TalonSRXConfiguration();
@@ -50,7 +53,15 @@ public class  Lift extends SubsystemBase{
         liftMotorSRXconfig.continuousCurrentLimit = 35;
         liftMotorSRXconfig.peakCurrentLimit = 60;
         liftMotorSRXconfig.peakCurrentDuration = 100;
+        liftMotorSRXconfig.forwardSoftLimitThreshold  = 100;
+        liftMotorSRXconfig.reverseSoftLimitThreshold = 0;
+        liftMotorSRXconfig.slot0.kP = 0.01;
+        liftMotorSRXconfig.slot0.kI = 0;
+        liftMotorSRXconfig.slot0.kD = 0;
         liftMotor.configAllSettings(liftMotorSRXconfig);
+        liftMotor.configForwardSoftLimitEnable(false);
+        liftMotor.configReverseSoftLimitEnable(true);
+
 
         liftSlaveSRXconfig.continuousCurrentLimit = 35;
         liftSlaveSRXconfig.peakCurrentLimit = 60;
@@ -59,40 +70,60 @@ public class  Lift extends SubsystemBase{
         liftMotor.setSelectedSensorPosition(0);
     }
 
-
     @Override
-    public void periodic(){        
-
-        SmartDashboard.putNumber("lift position ", liftMotor.getSelectedSensorPosition());
-
-        boolean highBool = !highLimit.get();
-        boolean lowBool = !lowLimit.get();
+    public void periodic(){  
         input = deadband(-controller.getRawAxis(5)) * 0.5;
         switch(liftState){
             case lift:
-                if(stateChange(input < 0, LiftStates.lower))  break;
-                if(stateChange(highBool, LiftStates.hold))  break;
+                if(stateChange(input < 0 && !automatic, LiftStates.lower))  break;
+                if(stateChange(controller.getRawButton(1), LiftStates.lower)) break;
+                if(stateChange(nearHigh(), LiftStates.hold))  break;
+                position = highTarget;
                 power = input;
             break;
             case lower:
-                if(stateChange(input > 0, LiftStates.lift))  break;
-                if(stateChange(lowBool, LiftStates.free))  break;
+                if(stateChange(input > 0 && !automatic, LiftStates.lift))  break;
+                if(stateChange(controller.getRawButton(4), LiftStates.lift))  break;
+                if(stateChange(nearLow(), LiftStates.free)) break;
+                position = lowTarget;
                 power = input * 0.2;
             break;
             case hold:
-                if(stateChange((Turret.getZero() && input < 0), LiftStates.lower))  break;
-                power = highBool ? 0.05 : input;
+                position = highTarget;
+                if(stateChange((Turret.getZero() && input < 0 && !automatic), LiftStates.lower))  break;
+                if(stateChange((Turret.getZero() && controller.getRawButton(1)), LiftStates.lower))  break;
             break;
             case free:
                 power = 0;
-                if(stateChange(input > 0, LiftStates.lift))  break;
-                liftState = input > 0 ? LiftStates.lift : LiftStates.free;
+                if(stateChange(input > 0 && !automatic, LiftStates.lift))  break;
+                if(stateChange(controller.getRawButton(4), LiftStates.lift)) break;
             break;
         }
-        liftMotor.set(ControlMode.PercentOutput, power);
+        if(controller.getRawButton(3)){
+            automatic = !automatic;
+        }
+        if(!automatic || liftState == LiftStates.free){
+            liftMotor.set(ControlMode.PercentOutput, power);
+        }else{
+            liftMotor.set(ControlMode.Position, position);  
+        }
         SmartDashboard.putString("lift state ", liftState.toString());
         SmartDashboard.putNumber("lift input ", input);
         SmartDashboard.putNumber("lift power ", power);
+        SmartDashboard.putNumber("lift position ", liftMotor.getSelectedSensorPosition());
+
+    }
+
+
+    private boolean nearLow(){
+        return Math.abs(liftMotor.getSelectedSensorPosition() - lowTarget) < 100;
+    }
+    private boolean nearHigh(){
+        return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 100;
+    }
+
+    private void manual(){
+
     }
 
     private boolean stateChange(Boolean condition, LiftStates state){

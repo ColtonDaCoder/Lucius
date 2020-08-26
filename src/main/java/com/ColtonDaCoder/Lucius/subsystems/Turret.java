@@ -55,7 +55,7 @@ public class Turret extends SubsystemBase {
       case hold:
         //while button 3, target zero
         //otherwise just go based on controller
-        if(controller.getRawButton(1) && !getZero()){
+        if(controller.getRawButton(2) && !getZero()){
           SmartDashboard.putNumber("turret input ", controller.getButtonCount());
           turret.set(ControlMode.Position, 0);
         } else {
