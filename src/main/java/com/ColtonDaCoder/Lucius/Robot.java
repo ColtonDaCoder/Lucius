@@ -20,6 +20,21 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
   
+  /**
+   * NOTE TO FUTURE TESTING COLTON:
+   *  --check turret to zero deadband       (line 75)
+   * 
+   *  --check soft limits for lift          (line 55)
+   * 
+   *  --check targets for lift              (line 33)
+   * 
+   *  --check target to position deadband   (line 120)
+   * 
+   *  --pid for lift and turret             (line 58 and 38)
+   * 
+   *  --check power for hold while manual   (line 95)
+   */
+
   public static DriverStation dStation;
   private UsbCamera camera;
 

@@ -92,6 +92,7 @@ public class  Lift extends SubsystemBase{
                 position = highTarget;
                 if(stateChange((Turret.getZero() && input < 0 && !automatic), LiftStates.lower))  break;
                 if(stateChange((Turret.getZero() && controller.getRawButton(1)), LiftStates.lower))  break;
+                power = 0.05;
             break;
             case free:
                 power = 0;
@@ -107,6 +108,7 @@ public class  Lift extends SubsystemBase{
         }else{
             liftMotor.set(ControlMode.Position, position);  
         }
+        SmartDashboard.putBoolean("automatic?", automatic);
         SmartDashboard.putString("lift state ", liftState.toString());
         SmartDashboard.putNumber("lift input ", input);
         SmartDashboard.putNumber("lift power ", power);
@@ -120,10 +122,6 @@ public class  Lift extends SubsystemBase{
     }
     private boolean nearHigh(){
         return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 100;
-    }
-
-    private void manual(){
-
     }
 
     private boolean stateChange(Boolean condition, LiftStates state){
