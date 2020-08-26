@@ -49,8 +49,8 @@ public class Turret extends SubsystemBase {
   @Override
   public void periodic() {
     SmartDashboard.putNumber("turret position ", turret.getSelectedSensorPosition());
-    double input = -controller.getTriggerAxis(Hand.kLeft) + controller.getTriggerAxis(Hand.kRight);
-    //controller.getRawAxis(0)
+    double input = controller.getRawAxis(0);
+    //-controller.getTriggerAxis(Hand.kLeft) + controller.getTriggerAxis(Hand.kRight)
     switch(liftState){
       case hold:
         //while button 3, target zero

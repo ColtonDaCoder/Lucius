@@ -66,7 +66,7 @@ public class Robot extends TimedRobot {
   }
 
   public static double deadband(double input){
-    return Math.abs(input) > 0.08 ? input : 0;
+    return Math.abs(input) > 0.1 ? input : 0;
   }
 
 }

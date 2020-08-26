@@ -34,9 +34,12 @@ public class  Lift extends SubsystemBase{
     public Lift(XboxController controller){
         this.controller = controller;
         liftMotor = new TalonSRX(1);
-        liftMotor.configFactoryDefault();
         liftSlave = new TalonSRX(2);
+        liftSlave.setInverted(true);
         liftSlave.follow(liftMotor);
+
+        liftMotor.configFactoryDefault();
+        liftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute);
 
         highLimit = new DigitalInput(9);
         lowLimit = new DigitalInput(8);
@@ -59,9 +62,12 @@ public class  Lift extends SubsystemBase{
 
     @Override
     public void periodic(){        
+
+        SmartDashboard.putNumber("lift position ", liftMotor.getSelectedSensorPosition());
+
         boolean highBool = !highLimit.get();
         boolean lowBool = !lowLimit.get();
-        input = deadband(-controller.getRawAxis(5));
+        input = deadband(-controller.getRawAxis(5)) * 0.5;
         switch(liftState){
             case lift:
                 if(stateChange(input < 0, LiftStates.lower))  break;
@@ -71,7 +77,7 @@ public class  Lift extends SubsystemBase{
             case lower:
                 if(stateChange(input > 0, LiftStates.lift))  break;
                 if(stateChange(lowBool, LiftStates.free))  break;
-                power = input;
+                power = input * 0.2;
             break;
             case hold:
                 if(stateChange((Turret.getZero() && input < 0), LiftStates.lower))  break;
