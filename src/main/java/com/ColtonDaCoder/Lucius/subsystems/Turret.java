@@ -52,8 +52,11 @@ public class Turret extends SubsystemBase {
     double input = controller.getRawAxis(0);
     //-controller.getTriggerAxis(Hand.kLeft) + controller.getTriggerAxis(Hand.kRight)
     switch(liftState){
+      case control:
+        turret.set(ControlMode.PercentOutput, 0);
+      break;
       case hold:
-        //while button 3, target zero
+        //while button 2, target zero
         //otherwise just go based on controller
         if(controller.getRawButton(2) && !getZero()){
           SmartDashboard.putNumber("turret input ", controller.getButtonCount());
@@ -61,9 +64,6 @@ public class Turret extends SubsystemBase {
         } else {
           turret.set(ControlMode.PercentOutput, input * 0.1);
         }
-      break;
-      default:
-        turret.set(ControlMode.PercentOutput, 0);
       break;
     }
   }

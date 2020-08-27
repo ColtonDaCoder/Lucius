@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
 
 
   public static enum LiftStates {
-    lift, lower, hold, free
+    control, hold
   };
 
   public static LiftStates liftState;
@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
     s_Lift = new Lift(controller);
     s_Turret = new Turret(controller);
 
-    liftState = LiftStates.hold;
+    liftState = LiftStates.control;
   }
 
   @Override
