@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
     s_Lift = new Lift(controller);
     s_Turret = new Turret(controller);
 
-    liftState = LiftStates.free;
+    liftState = LiftStates.hold;
   }
 
   @Override

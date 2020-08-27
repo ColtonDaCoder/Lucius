@@ -59,7 +59,7 @@ public class Turret extends SubsystemBase {
           SmartDashboard.putNumber("turret input ", controller.getButtonCount());
           turret.set(ControlMode.Position, 0);
         } else {
-          turret.set(ControlMode.PercentOutput, input * 0.2);
+          turret.set(ControlMode.PercentOutput, input * 0.1);
         }
       break;
       default:
