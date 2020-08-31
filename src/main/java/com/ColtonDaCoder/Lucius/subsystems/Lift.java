@@ -30,7 +30,7 @@ public class  Lift extends SubsystemBase{
     public TalonSRXConfiguration liftSlaveSRXconfig;
 
 
-    public int highTarget = 41995;
+    public int highTarget = 41030;
     public int lowTarget = 200;
 
     public Lift(XboxController controller){
@@ -62,7 +62,6 @@ public class  Lift extends SubsystemBase{
         liftMotor.configAllSettings(liftMotorSRXconfig);
         liftMotor.configForwardSoftLimitEnable(true);
         liftMotor.configReverseSoftLimitEnable(false);
-
         liftSlaveSRXconfig.continuousCurrentLimit = 35;
         liftSlaveSRXconfig.peakCurrentLimit = 60;
         liftSlaveSRXconfig.peakCurrentDuration = 100;
@@ -76,17 +75,20 @@ public class  Lift extends SubsystemBase{
         //liftMotor.set(ControlMode.PercentOutput, input);
         switch(liftState){
             case control:
-                if(stateChange(nearHigh(), LiftStates.hold)) break;
+                if(stateChange(nearHigh() && !(input < 0), LiftStates.hold)) break;
+                if(controller.getRawButton(1)){
+                    input = 0.05;
+                }
                 power = input;
             break;
             case hold:
                 if(stateChange((Turret.getZero() && input < 0) || !nearHigh(), LiftStates.control))  break;
-                power = 0;
+                power = 0.08;
             break;
         }
 
         liftMotor.set(ControlMode.PercentOutput, power);
-
+        SmartDashboard.putNumber("lift current ", liftMotor.getSupplyCurrent());
         SmartDashboard.putString("lift state ", liftState.toString());
         SmartDashboard.putNumber("lift input ", input);
         SmartDashboard.putNumber("lift power ", power);
@@ -99,7 +101,7 @@ public class  Lift extends SubsystemBase{
     }
 
     private boolean nearHigh(){
-        return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 500;
+        return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 200;
     }
 
     private boolean stateChange(Boolean condition, LiftStates state){
