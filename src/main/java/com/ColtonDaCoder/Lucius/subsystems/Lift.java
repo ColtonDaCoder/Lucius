@@ -2,6 +2,11 @@ package com.ColtonDaCoder.Lucius.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.MotorCommutation;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import com.ColtonDaCoder.Lucius.Robot.LiftStates;
@@ -19,24 +24,25 @@ public class  Lift extends SubsystemBase{
     
     private XboxController controller;
     
-    private TalonSRX liftMotor;
-    private TalonSRX liftSlave;
+    private TalonFX liftMotor;
+    private TalonFX liftSlave;
 
     private double input;
     private double power = 0;
     private double position = 0;
+    private boolean hold = false;
 
-    public TalonSRXConfiguration liftMotorSRXconfig;
-    public TalonSRXConfiguration liftSlaveSRXconfig;
+    public TalonFXConfiguration liftMotorFXconfig;
+    public TalonFXConfiguration liftSlaveFXconfig;
 
 
-    public int highTarget = 41030;
-    public int lowTarget = 200;
+    public int highTarget = -200;
+    public int lowTarget = -970830;
 
     public Lift(XboxController controller){
         this.controller = controller;
-        liftMotor = new TalonSRX(20);
-        liftSlave = new TalonSRX(1);
+        liftMotor = new TalonFX(2);
+        liftSlave = new TalonFX(3);
         liftMotor.configFactoryDefault();
         liftSlave.configFactoryDefault();
         liftMotor.setSensorPhase(false);
@@ -46,48 +52,61 @@ public class  Lift extends SubsystemBase{
 
         liftSlave.follow(liftMotor);
 
-        liftMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
+        liftMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor);
 
-        liftMotorSRXconfig = new TalonSRXConfiguration();
-        liftSlaveSRXconfig = new TalonSRXConfiguration();
+        liftMotorFXconfig = new TalonFXConfiguration();
+        liftSlaveFXconfig = new TalonFXConfiguration();
 
-        liftMotorSRXconfig.continuousCurrentLimit = 35;
-        liftMotorSRXconfig.peakCurrentLimit = 60;
-        liftMotorSRXconfig.peakCurrentDuration = 100;
-        liftMotorSRXconfig.forwardSoftLimitThreshold  = highTarget;
-        liftMotorSRXconfig.reverseSoftLimitThreshold = lowTarget;
-        liftMotorSRXconfig.slot0.kP = 1;
-        liftMotorSRXconfig.slot0.kI = 0;
-        liftMotorSRXconfig.slot0.kD = 0;
-        liftMotor.configAllSettings(liftMotorSRXconfig);
-        liftMotor.configForwardSoftLimitEnable(true);
+        SupplyCurrentLimitConfiguration liftSupplyLimit = new SupplyCurrentLimitConfiguration(
+           true, 
+            25, 
+            30, 
+            0.1);        
+       
+        liftMotorFXconfig.supplyCurrLimit = liftSupplyLimit;
+        liftMotorFXconfig.forwardSoftLimitThreshold  = highTarget;
+        liftMotorFXconfig.reverseSoftLimitThreshold = lowTarget;
+        liftMotorFXconfig.slot0.kP = 1;
+        liftMotorFXconfig.slot0.kI = 0;
+        liftMotorFXconfig.slot0.kD = 0;
+        liftMotor.configAllSettings(liftMotorFXconfig);
+        liftMotor.setNeutralMode(NeutralMode.Brake);
+
         liftMotor.configReverseSoftLimitEnable(false);
-        liftSlaveSRXconfig.continuousCurrentLimit = 35;
-        liftSlaveSRXconfig.peakCurrentLimit = 60;
-        liftSlaveSRXconfig.peakCurrentDuration = 100;
-        liftSlave.configAllSettings(liftSlaveSRXconfig);
+
+
+        liftMotor.configForwardSoftLimitEnable(true);
+
+        liftSlaveFXconfig.supplyCurrLimit = liftSupplyLimit;
+        liftSlave.configAllSettings(liftSlaveFXconfig);
+        liftSlave.setNeutralMode(NeutralMode.Brake);
         liftMotor.setSelectedSensorPosition(0);
     }
-
     @Override
     public void periodic(){  
-        input = deadband(-controller.getRawAxis(5)) * 0.5;
+        input = deadband(-controller.getRawAxis(5) * 0.25);
         //liftMotor.set(ControlMode.PercentOutput, input);
         switch(liftState){
             case control:
-                if(stateChange(nearHigh() && !(input < 0), LiftStates.hold)) break;
-                if(controller.getRawButton(1)){
-                    input = 0.05;
+                //if(stateChange((input > 0), LiftStates.hold)) break;
+                if(stateChange(controller.getRawButton(3), LiftStates.hold)) break;
+                if(nearLow() && input < 0){
+                    input = 0;
                 }
-                power = input;
+                if(controller.getRawButton(1)){
+                    input = -0.09;
+                }
+                power = -input;
             break;
             case hold:
-                if(stateChange((Turret.getZero() && input < 0) || !nearHigh(), LiftStates.control))  break;
-                power = 0.08;
+                if(stateChange((Turret.getZero() && input < 0) || controller.getRawButton(3), LiftStates.control))  break;
+                power = -0.07;
             break;
         }
 
         liftMotor.set(ControlMode.PercentOutput, power);
+        SmartDashboard.putBoolean("lift hold ", hold);
+
         SmartDashboard.putNumber("lift current ", liftMotor.getSupplyCurrent());
         SmartDashboard.putString("lift state ", liftState.toString());
         SmartDashboard.putNumber("lift input ", input);
@@ -97,11 +116,11 @@ public class  Lift extends SubsystemBase{
     }
 
     private boolean nearLow(){
-        return Math.abs(liftMotor.getSelectedSensorPosition() - lowTarget) < 500;
+        return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 9000;
     }
 
     private boolean nearHigh(){
-        return Math.abs(liftMotor.getSelectedSensorPosition() - highTarget) < 200;
+        return Math.abs(liftMotor.getSelectedSensorPosition() - lowTarget) < 9000;
     }
 
     private boolean stateChange(Boolean condition, LiftStates state){
