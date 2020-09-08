@@ -61,10 +61,10 @@ public class Turret extends SubsystemBase {
         //while button 2, target zero
         //otherwise just go based on controller
         if(input < 0){
-          turret.set(ControlMode.PercentOutput, input * 0.05 - 0.05);
+          turret.set(ControlMode.PercentOutput, input * 0.025 - 0.05);
         }
         else{
-          turret.set(ControlMode.PercentOutput, input * 0.05 + 0.05);
+          turret.set(ControlMode.PercentOutput, input * 0.025 + 0.05);
         }
 
         // if(controller.getRawButton(2) && !getZero()){

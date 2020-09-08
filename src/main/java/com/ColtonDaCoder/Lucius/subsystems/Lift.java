@@ -75,7 +75,7 @@ public class  Lift extends SubsystemBase{
         liftMotor.configReverseSoftLimitEnable(false);
 
 
-        liftMotor.configForwardSoftLimitEnable(true);
+        liftMotor.configForwardSoftLimitEnable(false);
 
         liftSlaveFXconfig.supplyCurrLimit = liftSupplyLimit;
         liftSlave.configAllSettings(liftSlaveFXconfig);
